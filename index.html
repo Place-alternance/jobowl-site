@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JobOwl — Job Search Tracker</title>
+  <meta name="description" content="Track every job application in one click. Private kanban board, stats & follow-up reminders. No account, no server, no subscription — your data never leaves your browser.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <!-- TODO once hosted: replace og:image with the absolute URL (OG requires absolute). -->
+  <meta property="og:title" content="JobOwl — Job Search Tracker">
+  <meta property="og:description" content="Your job search, under control. No account, no server, no subscription.">
+  <meta property="og:image" content="icon256.png">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #faf9f7;
+      --bg-card: #ffffff;
+      --bg-soft: #f3efe9;
+      --text: #211d17;
+      --muted: #6f6a60;
+      --accent: #e8590c;
+      --accent-hover: #d14f0a;
+      --accent-soft: rgba(232, 89, 12, 0.1);
+      --border: rgba(33, 29, 23, 0.1);
+      --shadow: 0 1px 3px rgba(33, 29, 23, 0.06), 0 8px 24px rgba(33, 29, 23, 0.06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18161b;
+        --bg-card: #211e26;
+        --bg-soft: #26222c;
+        --text: #efece7;
+        --muted: #9b958b;
+        --accent-soft: rgba(232, 89, 12, 0.16);
+        --border: rgba(239, 236, 231, 0.12);
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition: none !important; }
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Language switching: default EN; html[lang="fr"] shows FR */
+    html[lang="fr"] .en { display: none !important; }
+    html:not([lang="fr"]) .fr { display: none !important; }
+
+    .container { max-width: 1020px; margin: 0 auto; padding: 0 20px; }
+    a { color: var(--accent); }
+
+    /* ---------- Header ---------- */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav {
+      display: flex; align-items: center; gap: 20px;
+      padding: 12px 0;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 18px; letter-spacing: -0.01em;
+      color: var(--text); text-decoration: none;
+    }
+    .brand img { width: 28px; height: 28px; }
+    .nav-links { display: flex; gap: 20px; margin-left: auto; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 15px;
+    }
+    .nav-links a:hover { color: var(--text); }
+    #langBtn {
+      font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 4px 10px; cursor: pointer;
+    }
+    #langBtn:hover { color: var(--text); border-color: var(--muted); }
+    @media (max-width: 560px) {
+      .nav-links a:not(.nav-cta) { display: none; }
+    }
+
+    /* ---------- Hero ---------- */
+    .hero { text-align: center; padding: 72px 0 56px; }
+    .hero img.logo { width: 96px; height: 96px; margin-bottom: 20px; }
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      line-height: 1.12; letter-spacing: -0.03em;
+      margin: 0 0 16px;
+    }
+    .hero .sub {
+      font-size: clamp(16px, 2.5vw, 19px);
+      color: var(--muted);
+      max-width: 620px; margin: 0 auto 32px;
+    }
+    .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; text-decoration: none;
+      font-weight: 600; font-size: 16px;
+      padding: 12px 26px; border-radius: 10px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      color: var(--text);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .btn-secondary:hover { border-color: var(--muted); }
+    .trust-line { margin-top: 18px; font-size: 14px; color: var(--muted); }
+
+    /* ---------- Kanban mock ---------- */
+    .board {
+      margin: 56px auto 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+      text-align: left;
+      max-width: 860px;
+    }
+    .col h4 {
+      margin: 0 0 10px;
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .card {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 11px;
+      margin-bottom: 8px;
+      font-size: 13px; line-height: 1.35;
+    }
+    .card b { display: block; font-weight: 600; }
+    .card span { color: var(--muted); font-size: 12px; }
+    @media (max-width: 680px) {
+      .board { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ---------- Sections ---------- */
+    section { padding: 64px 0; scroll-margin-top: 56px; }
+    .section-title {
+      font-size: clamp(26px, 4vw, 34px);
+      letter-spacing: -0.02em; line-height: 1.2;
+      margin: 0 0 12px; text-align: center;
+    }
+    .section-sub {
+      text-align: center; color: var(--muted);
+      max-width: 560px; margin: 0 auto 44px;
+    }
+
+    /* Features */
+    .features {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+    }
+    .feature {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 26px;
+    }
+    .feature .icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--accent-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 14px;
+    }
+    .feature h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -0.01em; }
+    .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+    @media (max-width: 680px) {
+      .features { grid-template-columns: 1fr; }
+    }
+
+    /* Privacy band */
+    .privacy-band {
+      background: var(--bg-soft);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .privacy-band .inner { text-align: center; max-width: 640px; margin: 0 auto; }
+    .privacy-band .lock { font-size: 36px; }
+    .privacy-band p { color: var(--muted); }
+
+    /* Pricing */
+    .plans {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+      max-width: 760px; margin: 0 auto;
+      align-items: stretch;
+    }
+    .plan {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      display: flex; flex-direction: column;
+    }
+    .plan.pro { border: 2px solid var(--accent); position: relative; }
+    .badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 3px 12px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .plan h3 { margin: 0; font-size: 17px; }
+    .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin: 8px 0 2px; }
+    .price small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .plan ul { list-style: none; padding: 0; margin: 20px 0 26px; flex: 1; }
+    .plan li {
+      padding: 6px 0 6px 26px; position: relative;
+      font-size: 15px; color: var(--muted);
+    }
+    .plan li::before {
+      content: "✓"; position: absolute; left: 0;
+      color: var(--accent); font-weight: 700;
+    }
+    .plan .btn { text-align: center; }
+    @media (max-width: 680px) {
+      .plans { grid-template-columns: 1fr; }
+    }
+
+    /* Final CTA */
+    .final-cta { text-align: center; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0 40px;
+      font-size: 14px; color: var(--muted);
+    }
+    footer .inner {
+      display: flex; flex-wrap: wrap; gap: 8px 24px;
+      align-items: center; justify-content: space-between;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="#">
+      <img src="favicon.png" alt="" width="28" height="28">
+      JobOwl
+    </a>
+    <nav class="nav-links">
+      <a href="#features"><span class="en">Features</span><span class="fr">Fonctionnalités</span></a>
+      <a href="#pricing"><span class="en">Pricing</span><span class="fr">Tarifs</span></a>
+      <a href="privacy.html"><span class="en">Privacy</span><span class="fr">Confidentialité</span></a>
+      <button id="langBtn" type="button" aria-label="Switch language">FR</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ Hero ============ -->
+  <div class="container hero">
+    <img class="logo" src="icon256.png" alt="JobOwl owl mascot" width="96" height="96">
+    <h1>
+      <span class="en">Your job search,<br>under control.</span>
+      <span class="fr">Votre recherche d'emploi,<br>sous contrôle.</span>
+    </h1>
+    <p class="sub">
+      <span class="en">JobOwl turns your job hunt into a clean, private pipeline. No account, no server, no subscription — your data never leaves your browser.</span>
+      <span class="fr">JobOwl transforme votre recherche d'emploi en pipeline clair et privé. Pas de compte, pas de serveur, pas d'abonnement — vos données ne quittent jamais votre navigateur.</span>
+    </p>
+    <div class="cta-row">
+      <!-- TODO: replace with the real Chrome Web Store listing URL after publication -->
+      <a class="btn btn-primary" href="https://chromewebstore.google.com/">
+        <span class="en">Add to Chrome — Free</span>
+        <span class="fr">Ajouter à Chrome — Gratuit</span>
+      </a>
+      <a class="btn btn-secondary" href="#pricing">
+        <span class="en">See pricing</span>
+        <span class="fr">Voir les tarifs</span>
+      </a>
+    </div>
+    <p class="trust-line">
+      <span class="en">100% local · No account · Free up to 50 active jobs</span>
+      <span class="fr">100 % local · Sans compte · Gratuit jusqu'à 50 offres actives</span>
+    </p>
+
+    <!-- Decorative kanban preview -->
+    <div class="board" aria-hidden="true">
+      <div class="col">
+        <h4><span class="dot" style="background:#8c8578"></span><span class="en">Saved</span><span class="fr">Repérées</span></h4>
+        <div class="card"><b>Frontend Engineer</b><span>Acme Corp · Paris</span></div>
+        <div class="card"><b>Product Designer</b><span>Northwind · Remote</span></div>
+      </div>
+      <div class="col">
+        <h4><span class="dot" style="background:#2f80ed"></span><span class="en">Applied</span><span class="fr">Postulées</span></h4>
+        <div class="card"><b>UX Researcher</b><span>Globex · Lyon</span></div>
+        <div class="card"><b>Data Analyst</b><span>Initech · Hybrid</span></div>
+      </div>
+      <div class="col">
+        <h4><span class="dot" style="background:#e8590c"></span><span class="en">Interview</span><span class="fr">Entretien</span></h4>
+        <div class="card"><b>Fullstack Dev</b><span>Hooli · Remote</span></div>
+      </div>
+      <div class="col">
+        <h4><span class="dot" style="background:#27ae60"></span><span class="en">Offer</span><span class="fr">Offre</span></h4>
+        <div class="card"><b>Software Engineer</b><span>Stark Industries 🎉</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Features ============ -->
+  <section id="features">
+    <div class="container">
+      <h2 class="section-title">
+        <span class="en">Everything a job hunt needs. Nothing it doesn't.</span>
+        <span class="fr">Tout ce qu'il faut pour chercher. Rien de plus.</span>
+      </h2>
+      <p class="section-sub">
+        <span class="en">Stop tracking your job search in a messy spreadsheet — and stop paying $40/month to do it.</span>
+        <span class="fr">Arrêtez de suivre vos candidatures dans un tableur brouillon — et arrêtez de payer 40 $/mois pour le faire.</span>
+      </p>
+      <div class="features">
+        <div class="feature">
+          <div class="icon">🦉</div>
+          <h3>
+            <span class="en">Save any job in one click</span>
+            <span class="fr">Enregistrez toute offre en un clic</span>
+          </h3>
+          <p>
+            <span class="en">Open a posting on LinkedIn, Indeed, Glassdoor, Greenhouse, Lever or almost any careers page. Click the owl: title, company, location and salary are captured automatically.</span>
+            <span class="fr">Ouvrez une offre sur LinkedIn, Indeed, Welcome to the Jungle, HelloWork, France Travail ou presque n'importe quel site carrières. Cliquez sur la chouette : poste, entreprise, lieu et salaire sont capturés automatiquement.</span>
+          </p>
+        </div>
+        <div class="feature">
+          <div class="icon">📋</div>
+          <h3>
+            <span class="en">A kanban built for job hunting</span>
+            <span class="fr">Un kanban pensé pour l'emploi</span>
+          </h3>
+          <p>
+            <span class="en">Saved → Applied → Interview → Offer. Drag cards as you progress, keep notes and contacts per job, and see how long each application has been waiting.</span>
+            <span class="fr">Repérée → Postulée → Entretien → Offre. Déplacez les cartes, gardez notes et contacts par offre, visualisez depuis combien de temps chaque candidature attend.</span>
+          </p>
+        </div>
+        <div class="feature">
+          <div class="icon">⏰</div>
+          <h3>
+            <span class="en">Never forget to follow up</span>
+            <span class="fr">N'oubliez plus jamais de relancer</span>
+          </h3>
+          <p>
+            <span class="en">Set a follow-up reminder on any application and JobOwl pings you with a notification — the single habit that gets more interviews.</span>
+            <span class="fr">Programmez un rappel de relance sur chaque candidature : JobOwl vous notifie. C'est l'habitude qui décroche le plus d'entretiens.</span>
+          </p>
+        </div>
+        <div class="feature">
+          <div class="icon">📊</div>
+          <h3>
+            <span class="en">Know what's working</span>
+            <span class="fr">Sachez ce qui fonctionne</span>
+          </h3>
+          <p>
+            <span class="en">Applications per week, interview rate, pipeline funnel, best sources. Spend your energy where it converts.</span>
+            <span class="fr">Candidatures par semaine, taux d'entretien, entonnoir, meilleures sources. Mettez votre énergie là où ça convertit.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Privacy band ============ -->
+  <section class="privacy-band">
+    <div class="container inner">
+      <div class="lock">🔒</div>
+      <h2 class="section-title">
+        <span class="en">Radically private</span>
+        <span class="fr">Radicalement privé</span>
+      </h2>
+      <p>
+        <span class="en">No account. No sign-up. No server. Your job search is nobody's business: everything stays in your browser's local storage, and you can export it anytime (CSV / JSON). JobOwl can only read a page when you click its icon.</span>
+        <span class="fr">Pas de compte. Pas d'inscription. Pas de serveur. Votre recherche d'emploi ne regarde personne : tout reste dans le stockage local de votre navigateur, exportable à tout moment (CSV / JSON). JobOwl ne peut lire une page que lorsque vous cliquez sur son icône.</span>
+      </p>
+      <p>
+        <a href="privacy.html">
+          <span class="en">Read the privacy policy →</span>
+          <span class="fr">Lire la politique de confidentialité →</span>
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ Pricing ============ -->
+  <section id="pricing">
+    <div class="container">
+      <h2 class="section-title">
+        <span class="en">One price. Once.</span>
+        <span class="fr">Un prix. Une fois.</span>
+      </h2>
+      <p class="section-sub">
+        <span class="en">Job seekers don't need another subscription. One bad month of the competition pays JobOwl forever.</span>
+        <span class="fr">Un chercheur d'emploi n'a pas besoin d'un abonnement de plus. Un seul mois de la concurrence paie JobOwl pour toujours.</span>
+      </p>
+      <div class="plans">
+        <div class="plan">
+          <h3><span class="en">Free</span><span class="fr">Gratuit</span></h3>
+          <div class="price">$0<small> <span class="en">forever</span><span class="fr">pour toujours</span></small></div>
+          <ul>
+            <li><span class="en">Up to 50 active jobs</span><span class="fr">Jusqu'à 50 offres actives</span></li>
+            <li><span class="en">One-click capture</span><span class="fr">Capture en un clic</span></li>
+            <li><span class="en">Kanban board, notes & contacts</span><span class="fr">Kanban, notes et contacts</span></li>
+            <li><span class="en">Follow-up reminders</span><span class="fr">Rappels de relance</span></li>
+            <li><span class="en">CSV / JSON export</span><span class="fr">Export CSV / JSON</span></li>
+          </ul>
+          <!-- TODO: replace with the real Chrome Web Store listing URL after publication -->
+          <a class="btn btn-secondary" href="https://chromewebstore.google.com/">
+            <span class="en">Add to Chrome</span>
+            <span class="fr">Ajouter à Chrome</span>
+          </a>
+        </div>
+        <div class="plan pro">
+          <div class="badge"><span class="en">ONE-TIME · YOURS FOREVER</span><span class="fr">PAIEMENT UNIQUE · À VIE</span></div>
+          <h3>Pro</h3>
+          <div class="price">$29<small> <span class="en">one-time</span><span class="fr">une fois</span></small></div>
+          <ul>
+            <li><span class="en">Everything in Free</span><span class="fr">Tout le plan Gratuit</span></li>
+            <li><span class="en">Unlimited jobs</span><span class="fr">Offres illimitées</span></li>
+            <li><span class="en">Advanced stats: funnel, trends, sources</span><span class="fr">Stats avancées : entonnoir, tendances, sources</span></li>
+            <li><span class="en">No subscription. Ever.</span><span class="fr">Aucun abonnement, jamais.</span></li>
+            <li><span class="en">Support for an indie tool</span><span class="fr">Soutien d'un outil indépendant</span></li>
+          </ul>
+          <a class="btn btn-primary" href="https://jobowl.gumroad.com/l/jobowl-pro">
+            <span class="en">Get JobOwl Pro</span>
+            <span class="fr">Obtenir JobOwl Pro</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Final CTA ============ -->
+  <section class="final-cta">
+    <div class="container">
+      <h2 class="section-title">
+        <span class="en">Your next offer starts with a tidy pipeline.</span>
+        <span class="fr">Votre prochaine offre commence par un pipeline bien tenu.</span>
+      </h2>
+      <p class="section-sub">
+        <span class="en">Install JobOwl and save your first job in the next 30 seconds.</span>
+        <span class="fr">Installez JobOwl et enregistrez votre première offre dans les 30 secondes.</span>
+      </p>
+      <div class="cta-row">
+        <!-- TODO: replace with the real Chrome Web Store listing URL after publication -->
+        <a class="btn btn-primary" href="https://chromewebstore.google.com/">
+          <span class="en">Add to Chrome — Free</span>
+          <span class="fr">Ajouter à Chrome — Gratuit</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container inner">
+    <span>© 2026 JobOwl</span>
+    <span>
+      <a href="privacy.html"><span class="en">Privacy policy</span><span class="fr">Politique de confidentialité</span></a>
+      &nbsp;·&nbsp;
+      <a href="mailto:support@jobowl.app">support@jobowl.app</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var btn = document.getElementById('langBtn');
+
+  function apply(lang) {
+    document.documentElement.lang = lang;
+    btn.textContent = lang === 'fr' ? 'EN' : 'FR';
+    document.title = lang === 'fr'
+      ? 'JobOwl — Suivi de candidatures'
+      : 'JobOwl — Job Search Tracker';
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem('jobowl-lang'); } catch (e) {}
+  var initial = (saved === 'fr' || saved === 'en')
+    ? saved
+    : ((navigator.language || '').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en');
+  apply(initial);
+
+  btn.addEventListener('click', function () {
+    var next = document.documentElement.lang === 'fr' ? 'en' : 'fr';
+    apply(next);
+    try { localStorage.setItem('jobowl-lang', next); } catch (e) {}
+  });
+})();
+</script>
+
+</body>
+</html>
